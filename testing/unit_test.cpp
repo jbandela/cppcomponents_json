@@ -3,7 +3,7 @@
 
 int main(){
 
-  std::string json = R"({"test":1} )";
+  std::string json = R"({"test":1, "test1":[1,"string",1.5,{"t":1}]} )";
 
   auto value = cppcomponents::json::Json::FromString(json);
 
