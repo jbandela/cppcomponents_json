@@ -13,5 +13,5 @@ int main(){
 
   assert(i == 1);
 
-  std::cout << value.ToPrettyJsonString();
+  std::cout << cppcomponents::json::Json::ToFormattedJsonString(value);
 }

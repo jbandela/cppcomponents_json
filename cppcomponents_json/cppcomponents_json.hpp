@@ -22,6 +22,29 @@ enum {
 };
 }
 
+struct IJsonValue;
+
+
+
+struct IJsonVisitor :define_interface<cppcomponents::uuid<0xae7d80fa, 0x1f96, 0x4bc1, 0x9053, 0xf4e7d461519c>>
+{
+  void VisitNull();
+  void VisitBool(bool b);
+  void VisitString(cr_string str);
+  void VisitInt32(std::int32_t i);
+  void VisitUInt32(std::uint32_t i);
+  void VisitInt64(std::int64_t i);
+  void VisitUInt64(std::uint64_t i);
+  void VisitDouble(double d);
+  void VisitArray(use<IJsonValue> ar);
+  void VisitObject(use<IJsonValue> obj);
+
+  CPPCOMPONENTS_CONSTRUCT(IJsonVisitor, VisitNull, VisitBool, VisitString, VisitInt32,
+    VisitUInt32, VisitInt64, VisitUInt64, VisitDouble, VisitArray, VisitObject);
+
+
+};
+
 struct IJsonValue : define_interface<cppcomponents::uuid<
                         0xce866f96, 0x2d50, 0x48a7, 0xb2ca, 0xadcb82351047> > {
 
@@ -52,6 +75,7 @@ struct IJsonValue : define_interface<cppcomponents::uuid<
 
   use<IJsonValue> GetAtInteger(std::uint32_t i);
   use<IJsonValue> GetAtString(cr_string str);
+  use<IJsonValue> FindAtString(cr_string str);
   void SetAtInteger(std::uint32_t i,use<IJsonValue>);
   void SetAtString(cr_string str,use<IJsonValue>);
   void RemoveAtInteger(std::uint32_t i);
@@ -64,21 +88,25 @@ struct IJsonValue : define_interface<cppcomponents::uuid<
   use<InterfaceUnknown> ObjectCBeginRaw();
   use<InterfaceUnknown> ObjectCEndRaw();
 
-  std::string ToJsonString();
-  std::string ToPrettyJsonString();
+  void Visit(use<IJsonVisitor>);
+
 
   CPPCOMPONENTS_CONSTRUCT(IJsonValue, GetType, GetBool, GetString, GetStringRef,
                           GetDouble, GetInt32, GetUInt32, GetInt64, GetUInt64,
                           SetNull, SetBool, SetString, SetDouble, SetInt32,
                           SetUInt32, SetInt64, SetUInt64, ToArray, ToObject,
                           PushBack, Reserve,
-			  GetAtInteger,GetAtString,SetAtInteger,SetAtString,RemoveAtInteger,RemoveAtString,
-			  Size,ArrayCBeginRaw,ArrayCEndRaw,ObjectCBeginRaw,ObjectCEndRaw,
-                          ToJsonString, ToPrettyJsonString)
+			  GetAtInteger,GetAtString,FindAtString,SetAtInteger,SetAtString,RemoveAtInteger,RemoveAtString,
+			  Size,ArrayCBeginRaw,ArrayCEndRaw,ObjectCBeginRaw,ObjectCEndRaw,Visit)
 
   CPPCOMPONENTS_INTERFACE_EXTRAS(IJsonValue) {
     void operator()(cr_string idx, use<IJsonValue> v) {
       this->get_interface().SetAtString(idx, v);
+    }
+    template<class T>
+    void operator()(cr_string idx, T&& v) {
+      auto val = this->get_interface().GetAtString(idx);
+      val.Set(v);
     }
     void Set(bool v) { this->get_interface().SetBool(v); }
     void Set(cr_string v) { this->get_interface().SetString(v); }
@@ -107,11 +135,11 @@ struct IJsonValue : define_interface<cppcomponents::uuid<
     cppcomponents::iterator::random_access_iterator_wrapper<use<IJsonValue>> ArrayCEnd(){
       return cppcomponents::iterator::random_access_iterator_wrapper<use<IJsonValue>>{this->get_interface().ArrayCEndRaw() };
     }
-    cppcomponents::iterator::bidirectional_iterator_wrapper<std::pair<std::string, use<IJsonValue>>> ObjectCBegin(){
-      return cppcomponents::iterator::bidirectional_iterator_wrapper<std::pair<std::string, use<IJsonValue>>>{this->get_interface().ObjectCBeginRaw() };
+    cppcomponents::iterator::bidirectional_iterator_wrapper<std::pair<const std::string,  use<IJsonValue>>> ObjectCBegin(){
+      return cppcomponents::iterator::bidirectional_iterator_wrapper<std::pair<const std::string,  use<IJsonValue>>>{this->get_interface().ObjectCBeginRaw() };
     }
-    cppcomponents::iterator::bidirectional_iterator_wrapper<std::pair<std::string, use<IJsonValue>>> ObjectCEnd(){
-      return cppcomponents::iterator::bidirectional_iterator_wrapper<std::pair<std::string, use<IJsonValue>>>{this->get_interface().ObjectCEndRaw() };
+    cppcomponents::iterator::bidirectional_iterator_wrapper<std::pair<const std::string,  use<IJsonValue>>> ObjectCEnd(){
+      return cppcomponents::iterator::bidirectional_iterator_wrapper<std::pair<const std::string,  use<IJsonValue>>>{this->get_interface().ObjectCEndRaw() };
     }
 
   private:
@@ -126,16 +154,16 @@ struct IJsonValue : define_interface<cppcomponents::uuid<
   };
 };
 
-template<class T>
-use<IJsonValue> to_json(T&& t);
 
 struct IJsonValueStatics
     : define_interface<cppcomponents::uuid<0x9d61663e, 0x8855, 0x4012, 0x9746,
                                            0x24fe74ee1486> > {
   use<IJsonValue> Null();
   use<IJsonValue> FromString(cr_string string);
+  std::string ToJsonString(use<IJsonValue>);
+  std::string ToFormattedJsonString(use<IJsonValue>);
 
-  CPPCOMPONENTS_CONSTRUCT(IJsonValueStatics, Null, FromString)
+  CPPCOMPONENTS_CONSTRUCT(IJsonValueStatics, Null, FromString,ToJsonString,ToFormattedJsonString)
 
   CPPCOMPONENTS_STATIC_INTERFACE_EXTRAS(IJsonValueStatics) {
     template <class... T> static use<IJsonValue> Array(T &&... t) { auto value = Class::Null(); value.ToArray(); ArrayHelper(value, std::forward<T>(t0)...); return value; }
@@ -144,23 +172,16 @@ struct IJsonValueStatics
     static use<IJsonValue> Value(T&& t){ auto value = Class::Null(); value.Set(std::forward<T>(t)); return value; }
 private :
     template <class T0, class... T>
-    static void ArrayHelper(use<IJsonValue> &value, T0 &&t0, T &&...t) { value.PushBack(to_json(std::forward<T0>(t0)); ArrayHelper(value, std::forward<T>(t)...)); }
+    static void ArrayHelper(use<IJsonValue> &value, T0 &&t0, T &&...t) { value.PushBack(Value(std::forward<T0>(t0))); ArrayHelper(value, std::forward<T>(t)...); }
     static void ArrayHelper(use<IJsonValue> &value) { }
+    template<class... T>
+    static void ArrayHelper(use<IJsonValue> &value, use<IJsonValue> t0, T &&...t) { value.PushBack(t0); ArrayHelper(value, std::forward<T>(t)...); }
   };
 };
 
 inline std::string JsonId(){ return "cppcomponents_json_dll!Json"; }
 typedef runtime_class<JsonId, object_interfaces<IJsonValue>, static_interfaces<IJsonValueStatics>, factory_interface<NoConstructorFactoryInterface>> Json_t;
 typedef use_runtime_class<Json_t> Json;
-
-template<class T>
-use<IJsonValue> to_json(T&& t){
-  auto value = Json::Value(std::forward<T>(t));
-  return value;
-}
-inline use<IJsonValue> to_json(use<IJsonValue> value){
-  return value;
-}
 
 
 }

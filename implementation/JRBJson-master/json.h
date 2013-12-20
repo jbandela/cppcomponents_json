@@ -305,10 +305,10 @@ namespace jrb_json{
 
 	ivalue parse_json(const std::string& str);
 
-	std::string json_string(const value& d);
-	std::string pretty_json_string(const value& d);
+  std::string json_string(ivalue val);
+  std::string pretty_json_string(ivalue val);
 
-	inline object_holder object(){
+  inline object_holder object(){
 		object_holder ret;
 		return ret;
 	}

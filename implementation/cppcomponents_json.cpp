@@ -9,6 +9,8 @@ using namespace json;
 
 
 
+
+
 struct type_visitor :public boost::static_visitor<>{
 
 
@@ -116,8 +118,29 @@ struct ImplementJson :implement_runtime_class<ImplementJson, Json_t>
   use<IJsonValue> GetAtInteger(std::uint32_t i){
     return value_[i];
   }
+  use<IJsonValue> FindAtString(cr_string str){
+    auto& m = value_.get_exact<jrb_json::object_type>();
+    auto iter = m.find(str.to_string());
+    if (iter == m.end()){
+      return nullptr;
+    }
+    else{
+      return (*iter).second;
+    }
+
+  }
+
   use<IJsonValue> GetAtString(cr_string str){
-    return value_[str.to_string()];
+    auto ret =  value_[str.to_string()];
+    if (!ret){
+      ret = ImplementJson::create().QueryInterface<IJsonValue>();
+      ret.SetNull();
+      value_[str.to_string()] = ret;
+      return ret;
+    }
+    else{
+      return ret;
+    }
   }
   void SetAtInteger(std::uint32_t i, use<IJsonValue> v){
     value_[i] = v;
@@ -163,12 +186,69 @@ struct ImplementJson :implement_runtime_class<ImplementJson, Json_t>
     return iterator::make_iterator<object_iter_uuid>(value_.object_end());
   }
 
-  std::string ToJsonString(){
-    return jrb_json::json_string(value_);
+  void Visit(use<IJsonVisitor> visitor){
+    auto type = GetType();
+    switch (type){
+    case Type::Array:
+      visitor.VisitArray(this->QueryInterface<IJsonValue>());
+      break;
+
+    case Type::Bool:
+      visitor.VisitBool(GetBool());
+      break;
+
+    case Type::Double:
+      visitor.VisitDouble(GetDouble());
+      break;
+
+    case Type::Int32:
+      visitor.VisitInt32(GetInt32());
+      break;
+
+    case Type::Int64:
+      visitor.VisitInt64(GetInt64());
+      break;
+
+    case Type::Null:
+      visitor.VisitNull();
+      break;
+
+    case Type::Object:
+      visitor.VisitObject(this->QueryInterface<IJsonValue>());
+      break;
+
+    case Type::String:
+      visitor.VisitString(GetStringRef());
+      break;
+
+    case Type::UInt32:
+      visitor.VisitUInt32(GetUInt32());
+      break;
+
+    case Type::UInt64:
+      visitor.VisitUInt64(GetUInt64());
+      break;
+
+    default:
+      assert(0);
+      throw cppcomponents::error_fail();
+
+
+
+
+    }
+
   }
-  std::string ToPrettyJsonString(){
-    return jrb_json::pretty_json_string(value_);
+
+  static std::string ToJsonString(use<IJsonValue> val){
+    return jrb_json::json_string(val);
+
   }
+  static std::string ToFormattedJsonString(use<IJsonValue> val){
+    return jrb_json::pretty_json_string(val);
+
+  }
+
 
   ImplementJson(){}
 
