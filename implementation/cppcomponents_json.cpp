@@ -146,20 +146,20 @@ struct ImplementJson :implement_runtime_class<ImplementJson, Json_t>
     return value_.size();
   }
   typedef cppcomponents::uuid<0x31138995, 0x9caf, 0x4ffb, 0xb3a1, 0xe02867163cc5> array_iter_uuid;
-  use<InterfaceUnknown> ArrayCBegin(){
+  use<InterfaceUnknown> ArrayCBeginRaw(){
     
     return iterator::make_iterator<array_iter_uuid>(value_.array_begin());
   }
-  use<InterfaceUnknown> ArrayCEnd(){
+  use<InterfaceUnknown> ArrayCEndRaw(){
     return iterator::make_iterator<array_iter_uuid>(value_.array_end());
 
   }
 
   typedef cppcomponents::uuid<0x235e14e5, 0x65b4, 0x426b, 0x8d4e, 0x93e07f63580e> object_iter_uuid;
-  use<InterfaceUnknown> ObjectCBegin(){
+  use<InterfaceUnknown> ObjectCBeginRaw(){
     return iterator::make_iterator<object_iter_uuid>(value_.object_begin());
   }
-  use<InterfaceUnknown> ObjectCEnd(){
+  use<InterfaceUnknown> ObjectCEndRaw(){
     return iterator::make_iterator<object_iter_uuid>(value_.object_end());
   }
 
@@ -183,3 +183,8 @@ struct ImplementJson :implement_runtime_class<ImplementJson, Json_t>
   }
 
 };
+
+
+CPPCOMPONENTS_REGISTER(ImplementJson)
+
+CPPCOMPONENTS_DEFINE_FACTORY()

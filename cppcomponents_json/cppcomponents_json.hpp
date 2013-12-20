@@ -59,10 +59,10 @@ struct IJsonValue : define_interface<cppcomponents::uuid<
 
   std::uint32_t Size();
 
-  use<InterfaceUnknown> ArrayCBegin();
-  use<InterfaceUnknown> ArrayCEnd();
-  use<InterfaceUnknown> ObjectCBegin();
-  use<InterfaceUnknown> ObjectCEnd();
+  use<InterfaceUnknown> ArrayCBeginRaw();
+  use<InterfaceUnknown> ArrayCEndRaw();
+  use<InterfaceUnknown> ObjectCBeginRaw();
+  use<InterfaceUnknown> ObjectCEndRaw();
 
   std::string ToJsonString();
   std::string ToPrettyJsonString();
@@ -73,6 +73,7 @@ struct IJsonValue : define_interface<cppcomponents::uuid<
                           SetUInt32, SetInt64, SetUInt64, ToArray, ToObject,
                           PushBack, Reserve,
 			  GetAtInteger,GetAtString,SetAtInteger,SetAtString,RemoveAtInteger,RemoveAtString,
+			  Size,ArrayCBeginRaw,ArrayCEndRaw,ObjectCBeginRaw,ObjectCEndRaw,
                           ToJsonString, ToPrettyJsonString)
 
   CPPCOMPONENTS_INTERFACE_EXTRAS(IJsonValue) {
@@ -98,6 +99,21 @@ struct IJsonValue : define_interface<cppcomponents::uuid<
     bool IsNull(){
       return (this->get_interface().GetType() == Type::Null);
     }
+
+
+    cppcomponents::iterator::random_access_iterator_wrapper<use<IJsonValue>> ArrayCBegin(){
+      return cppcomponents::iterator::random_access_iterator_wrapper<use<IJsonValue>>{this->get_interface().ArrayCBeginRaw() };
+    }
+    cppcomponents::iterator::random_access_iterator_wrapper<use<IJsonValue>> ArrayCEnd(){
+      return cppcomponents::iterator::random_access_iterator_wrapper<use<IJsonValue>>{this->get_interface().ArrayCEndRaw() };
+    }
+    cppcomponents::iterator::bidirectional_iterator_wrapper<std::pair<std::string, use<IJsonValue>>> ObjectCBegin(){
+      return cppcomponents::iterator::bidirectional_iterator_wrapper<std::pair<std::string, use<IJsonValue>>>{this->get_interface().ObjectCBeginRaw() };
+    }
+    cppcomponents::iterator::bidirectional_iterator_wrapper<std::pair<std::string, use<IJsonValue>>> ObjectCEnd(){
+      return cppcomponents::iterator::bidirectional_iterator_wrapper<std::pair<std::string, use<IJsonValue>>>{this->get_interface().ObjectCEndRaw() };
+    }
+
   private:
     void GetHelper(bool &v) { v = this->get_interface().GetBool(); }
     void GetHelper(std::string &v) { v = this->get_interface().GetString(); }
@@ -142,7 +158,7 @@ use<IJsonValue> to_json(T&& t){
   auto value = Json::Value(std::forward<T>(t));
   return value;
 }
-use<IJsonValue> to_json(use<IJsonValue> value){
+inline use<IJsonValue> to_json(use<IJsonValue> value){
   return value;
 }
 

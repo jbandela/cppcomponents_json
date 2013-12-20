@@ -171,8 +171,8 @@ namespace {
 			jw_->StartObject();
 			for(auto& p:o){
 				jw_->String(p.first.c_str());
-//				boost::apply_visitor(*this,p.second.get().jrb_get_rep());
-			}
+        apply_helper(p.second);
+      }
 			jw_->EndObject(o.size());
 
 		}
@@ -181,13 +181,84 @@ namespace {
 			jw_->StartArray();
 			for(auto& p:a){
 			//	boost::apply_visitor(*this,p.get().jrb_get_rep());
+        apply_helper(p);
+
 			}
 			jw_->EndArray(a.size());    
 		}
 		void operator()(const jrb_json::null_t&) 
 		{
 			jw_->Null();
-		}
+    }
+
+    template<class T>
+    void call(T&& t){ (*this)(std::forward<T>(t)); }
+    void apply_helper(jrb_json::ivalue val){
+      auto type = val.GetType();
+      using namespace cppcomponents::json;
+      switch (type){
+      case Type::Array:
+        jw_->StartArray();
+        for (auto iter = val.ArrayCBegin(); iter != val.ArrayCEnd(); ++iter){
+          	apply_helper(static_cast<jrb_json::ivalue>(*iter));
+        }
+        jw_->EndArray(val.Size());
+        break;
+
+      case Type::Bool:
+        call(val.GetBool());
+        break;
+
+      case Type::Double:
+        call(val.GetDouble());
+        break;
+
+      case Type::Int32:
+        call(val.GetInt32);
+        break;
+
+      case Type::Int64:
+        call(val.GetInt64());
+        break;
+
+      case Type::Null:
+        call(jrb_json::null_t{});
+         break;
+
+      case Type::Object:
+	 jw_->StartObject();
+        for (auto iter = val.ObjectCBegin(); iter != val.ObjectCEnd(); ++iter){
+          auto p = (*iter).get();
+		jw_->String(p.first.c_str());
+          //				boost::apply_visitor(*this,p.second.get().jrb_get_rep());
+
+          	apply_helper(p.second);
+        }
+        jw_->EndArray(val.Size());
+        
+        break;
+
+      case Type::String:
+        call(val.GetStringRef());
+        break;
+
+      case Type::UInt32:
+        call(val.GetUInt32());
+        break;
+
+      case Type::UInt64:
+        call(val.GetUInt64());
+        break;
+
+      default:
+        assert(0);
+        throw cppcomponents::error_fail();
+
+
+
+
+      }
+    }
 		Writer*  jw_;
 
 	};
