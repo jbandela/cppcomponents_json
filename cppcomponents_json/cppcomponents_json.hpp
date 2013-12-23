@@ -67,8 +67,8 @@ namespace cppcomponents {
       void SetInt64(std::int64_t i);
       void SetUInt64(std::uint64_t i);
 
-      void ToArray();
-      void ToObject();
+      void SetArray();
+      void SetObject();
 
       void PushBack(use<IJsonValue>);
       void Reserve(std::uint32_t size);
@@ -94,7 +94,7 @@ namespace cppcomponents {
       CPPCOMPONENTS_CONSTRUCT(IJsonValue, GetType, GetBool, GetString, GetStringRef,
         GetDouble, GetInt32, GetUInt32, GetInt64, GetUInt64,
         SetNull, SetBool, SetString, SetDouble, SetInt32,
-        SetUInt32, SetInt64, SetUInt64, ToArray, ToObject,
+        SetUInt32, SetInt64, SetUInt64, SetArray, SetObject,
         PushBack, Reserve,
         GetAtInteger, GetAtString, FindAtString, SetAtInteger, SetAtString, RemoveAtInteger, RemoveAtString,
         Size, ArrayCBeginRaw, ArrayCEndRaw, ObjectCBeginRaw, ObjectCEndRaw, Visit)
@@ -119,11 +119,11 @@ namespace cppcomponents {
           void Set(std::uint64_t v) { this->get_interface().SetUInt64(v); }
 
 
-          void SetAt(std::uint32_t i, use<IJsonValue> val){
-            this->get_interface().SetAtInteger(i, val);
-          }
           void SetAt(cr_string str, use<IJsonValue> val){
             this->get_interface().SetAtString(str, val);
+          }
+          void SetAt(std::uint32_t i, use<IJsonValue> val){
+            this->get_interface().SetAtInteger(i, val);
           }
           void RemoveAt(std::uint32_t i){
             this->get_interface().RemoveAtInteger(i);
@@ -193,7 +193,7 @@ namespace cppcomponents {
     }
     template<class T>
     use<IJsonValue> IJsonValue::InterfaceExtras<T>::operator()(cr_string idx, use<IJsonValue> v) {
-      this->get_interface().SetAtString(idx, v);
+      this->get_interface().SetAt(idx, v);
       return this->get_interface();
     }
     template<class T>
@@ -215,8 +215,8 @@ namespace cppcomponents {
       CPPCOMPONENTS_CONSTRUCT(IJsonValueStatics, Null, FromString, ToJsonString, ToFormattedJsonString)
 
         CPPCOMPONENTS_STATIC_INTERFACE_EXTRAS(IJsonValueStatics) {
-          template <class... T> static use<IJsonValue> Array(T &&... t) { auto value = Class::Null(); value.ToArray(); ArrayHelper(value, std::forward<T>(t)...); return value; }
-          static use<IJsonValue>  Object(){ auto value = Class::Null(); value.ToObject(); return value; }
+          template <class... T> static use<IJsonValue> Array(T &&... t) { auto value = Class::Null(); value.SetArray(); ArrayHelper(value, std::forward<T>(t)...); return value; }
+          static use<IJsonValue>  Object(){ auto value = Class::Null(); value.SetObject(); return value; }
           template<class T>
           static use<IJsonValue> Value(T&& t){ auto value = Class::Null(); value.Set(std::forward<T>(t)); return value; }
     private:
@@ -229,7 +229,7 @@ namespace cppcomponents {
     };
 
     inline std::string JsonId(){ return "cppcomponents_json_dll!Json"; }
-    typedef runtime_class<JsonId, object_interfaces<IJsonValue>, static_interfaces<IJsonValueStatics>, factory_interface<NoConstructorFactoryInterface>> Json_t;
+    typedef runtime_class<JsonId, object_interfaces<IJsonValue, IClonable>, static_interfaces<IJsonValueStatics>, factory_interface<NoConstructorFactoryInterface>> Json_t;
     typedef use_runtime_class<Json_t> Json;
 
 

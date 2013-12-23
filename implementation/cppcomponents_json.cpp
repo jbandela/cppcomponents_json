@@ -58,6 +58,55 @@ struct type_visitor :public boost::static_visitor<>{
   std::int32_t type_;
 
 };
+
+inline std::string CloneVisitorId(){ return "cppcomponents::uuid<0x17ffcbb0, 0x49b6, 0x4196, 0x9654, 0x409957b8a8dc>"; }
+struct ImplementCloneVisitor :cppcomponents::implement_runtime_class<ImplementCloneVisitor,
+  cppcomponents::runtime_class<CloneVisitorId, cppcomponents::object_interfaces<cppcomponents::json::IJsonVisitor>,
+  cppcomponents::factory_interface<cppcomponents::NoConstructorFactoryInterface >> >
+{
+  void ReleaseImplementationDestroy(){
+    // Do nothing
+    // This is only created on the stack
+
+  }
+
+ use<IJsonValue> value_;
+
+ ImplementCloneVisitor() :value_{ Json::Null() }{}
+
+  void VisitNull(){ value_.SetNull(); }
+  void VisitBool(bool b) { value_.SetBool(b); }
+  void VisitString(cr_string str){ value_.SetString(str); }
+  void VisitInt32(std::int32_t i){ value_.SetInt32(i); }
+  void VisitUInt32(std::uint32_t i) { value_.SetUInt32(i); }
+  void VisitInt64(std::int64_t i){ value_.SetInt64(i); }
+  void VisitUInt64(std::uint64_t i){ value_.SetUInt64(i); };
+  void VisitDouble(double d){ value_.SetDouble(d); }
+  void VisitArray(use<IJsonValue> val){
+    value_.SetArray();
+    for (auto iter = val.ArrayCBegin(); iter != val.ArrayCEnd(); ++iter) {
+      ImplementCloneVisitor v;
+      (static_cast<jrb_json::ivalue>(*iter)).Visit(v.QueryInterface<IJsonVisitor>());
+      value_.PushBack(v.value_); 
+    }
+
+  }
+  void VisitObject(use<IJsonValue> val){
+    value_.SetObject();
+    for (auto iter = val.ObjectCBegin(); iter != val.ObjectCEnd(); ++iter) {
+      ImplementCloneVisitor v;
+      auto p = (*iter).get();
+      auto key = p.first;
+      p.second.Visit(v.QueryInterface<IJsonVisitor>());
+      value_.SetAt(key, v.value_);
+    }
+
+  }
+
+
+};
+
+
 struct ImplementJson :implement_runtime_class<ImplementJson, Json_t>
 {
   jrb_json::value value_;
@@ -103,8 +152,8 @@ struct ImplementJson :implement_runtime_class<ImplementJson, Json_t>
   void SetInt64(std::int64_t i){ value_ = i; }
   void SetUInt64(std::uint64_t i){ value_ = i; }
 
-  void ToArray(){ value_ = jrb_json::array(); }
-  void ToObject(){
+  void SetArray(){ value_ = jrb_json::array(); }
+  void SetObject(){
     value_ = jrb_json::object();
   }
 
@@ -238,6 +287,9 @@ struct ImplementJson :implement_runtime_class<ImplementJson, Json_t>
 
     }
 
+
+
+
   }
 
   static std::string ToJsonString(use<IJsonValue> val){
@@ -261,7 +313,11 @@ struct ImplementJson :implement_runtime_class<ImplementJson, Json_t>
     return jrb_json::parse_json(str.to_string());
 
   }
-
+  use<InterfaceUnknown> IClonable_Clone(){
+    ImplementCloneVisitor v;
+    Visit(v.QueryInterface<IJsonVisitor>());
+    return v.value_;
+  }
 };
 
 

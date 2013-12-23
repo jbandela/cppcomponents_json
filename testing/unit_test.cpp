@@ -24,5 +24,13 @@ int main(){
 
   std::cout << cppcomponents::json::Json::ToFormattedJsonString(value) << "\n";
 
+  auto value2 = value;
+
+  auto value_cloned = value.QueryInterface<cppcomponents::IClonable>().Clone().QueryInterface<cppcomponents::json::IJsonValue>();
+
+  value2.SetAt("test", Json::Value(2));
+
+   std::cout << cppcomponents::json::Json::ToFormattedJsonString(value) << "\n";
+   std::cout << cppcomponents::json::Json::ToFormattedJsonString(value_cloned) << "\n";
 
 }
