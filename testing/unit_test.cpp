@@ -28,8 +28,9 @@ int main(){
 
   auto value_cloned = value.QueryInterface<cppcomponents::IClonable>().Clone().QueryInterface<cppcomponents::json::IJsonValue>();
 
-  value2.SetAt("test", Json::Value(2));
-
+  value2.SetAt("test", 2);
+  value2.GetAt("Array").SetAt(0, 7);
+  value2.GetAt("Array").GetAt(4)("o", 2);
    std::cout << cppcomponents::json::Json::ToFormattedJsonString(value) << "\n";
    std::cout << cppcomponents::json::Json::ToFormattedJsonString(value_cloned) << "\n";
 

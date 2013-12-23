@@ -24,7 +24,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\cppcomponents_json\cppcomponents_json.hpp">
-      <Filter>Header Files</Filter>
+      <Filter>Resource Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

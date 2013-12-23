@@ -124,7 +124,17 @@ namespace cppcomponents {
           }
           void SetAt(std::uint32_t i, use<IJsonValue> val){
             this->get_interface().SetAtInteger(i, val);
+          } 
+	  template<class T>
+          void SetAt(cr_string str, T&& t){
+            this->get_interface().GetAtString(str).Set(std::forward<T>(t));
           }
+	  template<class T>
+          void SetAt(std::uint32_t i, T&& t){
+            this->get_interface().GetAtInteger(i).Set(std::forward<T>(t));
+          }
+
+
           void RemoveAt(std::uint32_t i){
             this->get_interface().RemoveAtInteger(i);
           }

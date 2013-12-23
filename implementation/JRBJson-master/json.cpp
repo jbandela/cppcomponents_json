@@ -72,7 +72,7 @@ struct parse_handler {
   void StartObject() {}
   void EndObject(SizeType memberCount) {
     auto obj = cppcomponents::json::Json::Object();
-    for (int i = 0; i < memberCount; i++) {
+    for (SizeType i = 0; i < memberCount; i++) {
       check_st();
       auto val = st_.top();
       st_.pop();
@@ -87,7 +87,7 @@ struct parse_handler {
   void EndArray(SizeType elementCount) {
     auto v = cppcomponents::json::Json::Array();
     std::vector<jrb_json::ivalue> vec;
-    for (int i = 0; i < elementCount; i++) {
+    for (SizeType i = 0; i < elementCount; i++) {
       check_st();
       vec.push_back(st_.top());
       st_.pop();
